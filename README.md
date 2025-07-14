@@ -1,77 +1,215 @@
-# TypeScript Library Starter
+# flowgen
 
-![NPM](https://img.shields.io/npm/l/@gjuchault/typescript-library-starter)
-![NPM](https://img.shields.io/npm/v/@gjuchault/typescript-library-starter)
-![GitHub Workflow Status](https://github.com/gjuchault/typescript-library-starter/actions/workflows/typescript-library-starter.yml/badge.svg?branch=main)
+Type-safe error management using generators. Inspired by [EffectTS](https://effect.website/) and [typescript-result](https://github.com/everweij/typescript-result)
 
-Yet another (opinionated) TypeScript library starter template.
+## Usage
 
-If you're looking for a backend service starter, check out my [typescript-service-starter](https://github.com/gjuchault/typescript-service-starter)
+### Without flowgen
 
-## Opinions and limitations
+You throw your errors and thus relies on untyped goto-like pattern:
 
-1. Relies as much as possible on each included library's defaults
-2. Only relies on GitHub Actions
-3. Does not include documentation generation
+```ts
+async function dependency(a: number, b: number): number {
+  if (value === 0) {
+    throw new Error(`Invalid denominator: ${b}`);
+  }
 
-## Getting started
+  return a / b;
+}
 
-1. `npx degit gjuchault/typescript-library-starter my-project` or click on the `Use this template` button on GitHub!
-2. `cd my-project`
-3. `npm install`
-4. `git init` (if you used degit)
-5. `node --run setup`
+async function main(userInput: number) {
+  try {
+    const result = await dependency(10, userInput);
 
-To enable deployment, you will need to:
+    console.log(result);
+  } catch (error /* error is unknown */) {
+    console.log("Some error happened", error);
+  }
+}
+```
 
-1. Set up the `NPM_TOKEN` secret in GitHub Actions ([Settings > Secrets > Actions](https://github.com/gjuchault/typescript-library-starter/settings/secrets/actions))
-2. Give `GITHUB_TOKEN` write permissions for GitHub releases ([Settings > Actions > General](https://github.com/gjuchault/typescript-library-starter/settings/actions) > Workflow permissions)
+### With Result pattern
 
-## Features
+You have verbose but type-safe code. For every result you have to check if the result is an error:
 
-### Node.js, npm version
+```ts
+type Result<Value, Error> =
+  | { ok: true; value: Value }
+  | { ok: false; error: Error };
 
-TypeScript Library Starter relies on [Volta](https://volta.sh/) to ensure the Node.js version is consistent across developers. It's also used in the GitHub workflow file.
+async function dependency(
+  a: number,
+  b: number
+): Promise<Result<number, { name: "valueError"; message: string }>> {
+  if (b === 0) {
+    return {
+      ok: false,
+      error: { name: "valueError", message: `Invalid denominator: ${b}` },
+    };
+  }
 
-### TypeScript
+  return { ok: true, value: a / b };
+}
 
-Leverages [Typescript 7](https://github.com/microsoft/typescript-go) for blazing-fast builds and type-checking.
-Generates a single ESM build.
+async function main(userInput: number) {
+  const result = await dependency(10, userInput);
 
-Commands:
+  // for every method you call, you need to infer `Result` to a successful state
+  if (result.ok == false) {
+    console.log(
+      "Some error happened",
+      result.error /* error is properly typed */
+    );
+    return;
+  }
 
-- `build`: runs type checking, then ESM and `d.ts` files in the `build/` directory
-- `clean`: removes the `build/` directory
-- `type:check`: runs type checking
+  console.log(result.value);
+}
+```
 
-### Tests
+### With flowgen
 
-TypeScript Library Starter uses [Node.js's native test runner](https://nodejs.org/api/test.html). Coverage is done using [c8](https://github.com/bcoe/c8) but will switch to Node.js's one once out.
+You get automatic typing for errors and returns:
 
-Commands:
+```ts
+async function* dependency(
+  a: number,
+  b: number
+): AsyncGenerator<Error, number> {
+  if (b === 0) {
+    yield new Error(`Invalid denominator: ${b}`);
+  }
 
-- `test`: runs test runner
-- `test:watch`: runs test runner in watch mode
-- `test:coverage`: runs test runner and generates coverage reports
+  return a / b;
+}
 
-### Format & lint
+async function main(userInput: number) {
+  const result = await flow(async function* () {
+    // yield intermediate method which unwraps the value, no chains of `if error early return`
+    const value = yield* dependency(10, userInput); // value is number
 
-This template relies on [Biome](https://biomejs.dev/) to do both formatting & linting in no time.
-It also uses [cspell](https://github.com/streetsidesoftware/cspell) to ensure correct spelling.
+    return value;
+  });
 
-Commands:
+  // only one error management per flow, an exhaustive switch works well
+  if (result.ok === false) {
+    console.log(
+      "Some error happened",
+      result.error /* error is properly typed */
+    );
+    return;
+  }
 
-- `lint`: runs Biome with automatic fixing
-- `lint:check`: runs Biome without automatic fixing (used in CI)
-- `spell:check`: runs spell checking
+  console.log(result.value);
+}
+```
 
-### Releasing
+## API
 
-Under the hood, this library uses [semantic-release](https://github.com/semantic-release/semantic-release) and [Commitizen](https://github.com/commitizen/cz-cli).
-The goal is to avoid manual release processes. Using `semantic-release` will automatically create a GitHub release (hence tags) as well as an npm release.
-Based on your commit history, `semantic-release` will automatically create a patch, feature, or breaking release.
+### `flow(generator)`
 
-Commands:
+```ts
+async function flow<Error, Value>(
+  generator: () => Generator<Error, Value> | AsyncGenerator<Error, Value>
+): Promise<{ ok: true; value: Value } | { ok: false; error: Error }>;
+```
 
-- `cz`: interactive CLI that helps you generate a proper git commit message, using [Commitizen](https://github.com/commitizen/cz-cli)
-- `semantic-release`: triggers a release (used in CI)
+This method turns a generator into a promise. Useful as entrypoint before using generators.
+Inside the generator, always `yield*` other generators.
+
+Example:
+
+```ts
+const result = await flow(async function* () {
+  const a = yield* serviceA.methodA();
+  const b = yield* serviceB.methodB(a);
+  const c = yield* serviceC.methodC(b);
+
+  return c;
+});
+
+if (result.ok === false) {
+  // deal with result.error which is an union of errors yielded by methodA, methodB or methodC
+}
+
+// deal with result.value which is equal to `c`
+```
+
+### `gen(callback)`
+
+```ts
+function gen<Parameters extends unknown[], Error, Value>(
+  callback: (...args: Parameters) => Value | Promise<Value>,
+  unhandledError: (error: unknown) => Error = (error) => error as Error
+): (...args: Parameters) => AsyncGenerator<Error, Value>;
+```
+
+This method turns a sync/async method into a generator.
+
+Example:
+
+```ts
+import fs from "node:fs/promises";
+const readFile = gen(
+  async (path: string) => {
+    return await fs.readFile(path, "utf-8");
+  },
+  () => ({ name: "ioError", message: "File not found" })
+);
+
+const result = flow(async function* () {
+  const file = yield* readFile("file.txt");
+
+  return file;
+});
+```
+
+### `never()`
+
+```ts
+function never(): never;
+```
+
+A never helper. Can be useful when you want to infer a value after yielding an error.
+
+Example:
+
+```ts
+async function* divide(a: 1 | 2): AsyncGenerator<Error, number> {
+  if (a === 1) {
+    yield new Error(`Invalid denominator: ${b}`);
+    never();
+  }
+
+  return a; // inferred to 2
+}
+```
+
+### `all()`
+
+Similar to `Promise.all()` for generators
+
+```ts
+function all<Error, Value>(
+  generators: AsyncGenerator<Error, Value>[]
+): () => AsyncGenerator<Error, Value[]>;
+```
+
+Example:
+
+```ts
+async function* dep1() {
+  await setTimeout(50);
+  return 1;
+}
+
+async function* dep2() {
+  await setTimeout(80);
+  return 1;
+}
+
+const result = flow(async function* () {
+  // runs in parallel
+  const [a, b] = yield* all([dep1(), dep2()]);
+});
+```

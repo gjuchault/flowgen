@@ -1,5 +1,5 @@
 {
-	"name": "resgen",
+	"name": "flowgen",
 	"version": "0.0.0-development",
 	"type": "module",
 	"exports": "./build/index.js",

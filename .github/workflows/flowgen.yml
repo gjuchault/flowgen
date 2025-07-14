@@ -1,4 +1,4 @@
-name: resgen
+name: flowgen
 
 on: [push]
 

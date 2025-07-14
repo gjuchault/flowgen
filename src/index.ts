@@ -1,7 +1,7 @@
-import { bar } from "./bar.ts";
-import { foo } from "./foo.ts";
-import { baz } from "./nested/baz.ts";
+export * from "./all.ts";
+export * from "./flow.ts";
+export * from "./gen.ts";
 
-export function foobar(a: number, b: number) {
-	return foo().repeat(a).length + bar().repeat(b).length + baz().length;
+export function never(): never {
+	throw new Error("never");
 }

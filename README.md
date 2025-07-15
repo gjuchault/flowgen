@@ -243,3 +243,31 @@ const result = flow(async function* () {
   // a = 1 since dep1 is faster than dep2
 });
 ```
+
+### `timeout()`
+
+Helper to make a generator not exceed a specific time
+
+```ts
+function timeout<Error, Value>(
+  timeoutInMs: number,
+  generator: AsyncGenerator<Error, Value>
+): () => AsyncGenerator<Error | TimeoutError, Value>;
+```
+
+Example:
+
+```ts
+async function* dep1() {
+  await setTimeout(50);
+  return 1;
+}
+
+const result = flow(async function* () {
+  const a = yield* timeout(100, dep1());
+  // a = 1 since dep1 is fast enough
+
+  const b = yield* timeout(10, dep1());
+  // this will timeout and result will be a TimeoutError
+});
+```

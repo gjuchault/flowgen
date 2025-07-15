@@ -1,8 +1,8 @@
 import { deepEqual, equal, ok } from "node:assert/strict";
 import { describe, it } from "node:test";
 import { setTimeout as sleep } from "node:timers/promises";
-import { flow, never } from "../index.ts";
-import { type TimeoutError, timeout } from "../timeout.ts";
+import { flow } from "../index.ts";
+import { timeout } from "../timeout.ts";
 
 type CustomError = { name: "customError"; message: string };
 

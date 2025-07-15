@@ -175,9 +175,9 @@ A never helper. Can be useful when you want to infer a value after yielding an e
 Example:
 
 ```ts
-async function* divide(a: 1 | 2): AsyncGenerator<Error, number> {
+async function* method(a: 1 | 2): AsyncGenerator<Error, number> {
   if (a === 1) {
-    yield new Error(`Invalid denominator: ${b}`);
+    yield new Error(`Invalid denominator: ${a}`);
     never();
   }
 

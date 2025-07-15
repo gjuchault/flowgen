@@ -26,3 +26,24 @@ export function all<Error, Value>(
 		(error) => error as Error,
 	);
 }
+
+export function race<Error, Value>(
+	generators: AsyncGenerator<Error, Value>[],
+): () => AsyncGenerator<Error, Value> {
+	const allPromises = generators.map(async (generator) => {
+		return await flow(() => generator);
+	});
+
+	return gen(
+		async () => {
+			const result = await Promise.race(allPromises);
+
+			if (result.ok === false) {
+				throw result.error;
+			}
+
+			return result.value;
+		},
+		(error) => error as Error,
+	);
+}

@@ -213,3 +213,33 @@ const result = flow(async function* () {
   const [a, b] = yield* all([dep1(), dep2()]);
 });
 ```
+
+### `race()`
+
+Similar to `Promise.race()` for generators
+
+```ts
+function race<Error, Value>(
+  generators: AsyncGenerator<Error, Value>[]
+): () => AsyncGenerator<Error, Value>;
+```
+
+Example:
+
+```ts
+async function* dep1() {
+  await setTimeout(50);
+  return 1;
+}
+
+async function* dep2() {
+  await setTimeout(80);
+  return 2;
+}
+
+const result = flow(async function* () {
+  // runs in parallel
+  const a = yield* race([dep1(), dep2()]);
+  // a = 1 since dep1 is faster than dep2
+});
+```

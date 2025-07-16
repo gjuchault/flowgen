@@ -1,3 +1,5 @@
+import { never } from "./never.ts";
+
 export function gen<Parameters extends unknown[], Error, Value>(
 	callback: (...args: Parameters) => Value | Promise<Value>,
 	unhandledError: (error: unknown) => Error = (error) => error as Error,
@@ -9,8 +11,9 @@ export function gen<Parameters extends unknown[], Error, Value>(
 			return originalValue;
 		} catch (error) {
 			yield unhandledError(error);
-
-			return undefined as never;
+			/* c8 ignore next 3 */
+			// this can never be called since flow will only call next() once
+			return never();
 		}
 	};
 }

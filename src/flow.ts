@@ -21,3 +21,15 @@ export function wrapFlow<Parameters extends unknown[], Error, Value>(
 		return await flow(() => generator(...args));
 	};
 }
+
+export async function unsafeFlowOrThrow<Value>(
+	callback: () => Generator<unknown, Value> | AsyncGenerator<unknown, Value>,
+): Promise<Value> {
+	const result = await flow(callback);
+
+	if (result.ok === false) {
+		throw new Error("Unwrapping error", { cause: result.error });
+	}
+
+	return result.value;
+}

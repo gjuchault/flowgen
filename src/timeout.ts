@@ -24,6 +24,8 @@ async function* timeoutGenerator(
 	try {
 		await sleep(timeoutInMs, { signal });
 		yield { name: "timeoutError", timeoutInMs };
+		/* c8 ignore next 3 */
+		// this can never be called since flow will only call next() once
 		return never();
 	} catch {
 		return never();

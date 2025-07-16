@@ -214,6 +214,40 @@ async function* method(a: 1 | 2): AsyncGenerator<Error, number> {
 }
 ```
 
+### `noop()`
+
+```ts
+function noop(): AsyncGenerator<never, void>;
+```
+
+A noop helper. Can be useful when you want to yield nothing just to please the linter.
+
+Example:
+
+```ts
+async function* method(a: number): AsyncGenerator<Error, number> {
+  yield* noop();
+
+  return a;
+}
+```
+
+### `identity()`
+
+```ts
+function identity<Value>(value: Value): AsyncGenerator<never, Value>;
+```
+
+A noop helper. Can be useful when you want to yield a value
+
+Example:
+
+```ts
+async function* method(a: number): AsyncGenerator<Error, number> {
+  return yield* identity(a);
+}
+```
+
 ### `all()`
 
 Similar to `Promise.all()` for generators
@@ -299,4 +333,28 @@ const result = flow(async function* () {
   const b = yield* timeout(10, dep1());
   // this will timeout and result will be a TimeoutError
 });
+```
+
+### `unsafeFlowOrThrow()`
+
+Similar to [`flow`](https://github.com/gjuchault/flowgen?tab=readme-ov-file#flowgenerator) but returns the value or throws instead of returning a result. This will mute error type-safety, use it with caution
+
+```ts
+unsafeFlowOrThrow<Value>(
+	callback: () => Generator<unknown, Value> | AsyncGenerator<unknown, Value>,
+): Promise<Value>
+```
+
+Example:
+
+```ts
+async function* method() {
+  // this is 100% safe
+  const a = yield* identity(1);
+  const b = yield* identity(2);
+
+  return a + b;
+}
+
+const value = await unsafeFlowOrThrow(method); // value = 3
 ```

@@ -9,3 +9,15 @@ export async function flow<Error, Value>(
 
 	return { ok: true, value: step.value as Value };
 }
+
+export function wrapFlow<Parameters extends unknown[], Error, Value>(
+	generator: (
+		...args: Parameters
+	) => Generator<Error, Value> | AsyncGenerator<Error, Value>,
+): (
+	...args: Parameters
+) => Promise<{ ok: true; value: Value } | { ok: false; error: Error }> {
+	return async (...args: Parameters) => {
+		return await flow(() => generator(...args));
+	};
+}

@@ -112,6 +112,15 @@ async function main(userInput: number) {
 async function flow<Error, Value>(
   generator: () => Generator<Error, Value> | AsyncGenerator<Error, Value>
 ): Promise<{ ok: true; value: Value } | { ok: false; error: Error }>;
+
+// or the wrapper one:
+function wrapFlow<Parameters extends unknown[], Error, Value>(
+  generator: (
+    ...args: Parameters
+  ) => Generator<Error, Value> | AsyncGenerator<Error, Value>
+): (
+  ...args: Parameters
+) => Promise<{ ok: true; value: Value } | { ok: false; error: Error }>;
 ```
 
 This method turns a generator into a promise. Useful as entrypoint before using generators.
@@ -127,6 +136,26 @@ const result = await flow(async function* () {
 
   return c;
 });
+
+if (result.ok === false) {
+  // deal with result.error which is an union of errors yielded by methodA, methodB or methodC
+}
+
+// deal with result.value which is equal to `c`
+```
+
+Example with `wrapFlow`:
+
+```ts
+async function* someGenerator(value: number) {
+  const a = yield* serviceA.methodA(value);
+  const b = yield* serviceB.methodB(a);
+  const c = yield* serviceC.methodC(b);
+
+  return c;
+}
+
+const result = await wrapFlow(someGenerator)(42);
 
 if (result.ok === false) {
   // deal with result.error which is an union of errors yielded by methodA, methodB or methodC

@@ -1,6 +1,6 @@
 import { equal, ok } from "node:assert/strict";
 import { describe, it } from "node:test";
-import { flow, gen, never } from "../index.ts";
+import { flow, gen, never, wrapFlow } from "../index.ts";
 
 type GenError = { name: "genError"; error: Error };
 type AsyncGenError = { name: "asyncGenError"; error: Error };
@@ -112,6 +112,28 @@ await describe("flowgen", async () => {
 			ok(asyncMethodFails.ok === false);
 			equal(asyncMethodFails.error.name, "asyncMethodError");
 			equal(asyncMethodFails.error.error.message, "depAsyncMethod failed");
+		});
+	});
+});
+
+await describe("wrapFlow()", async () => {
+	await describe("given a generator function", async () => {
+		async function* generator(baseValue: number) {
+			const a = yield* depGenerator(baseValue + 1);
+			const b = yield* depAsyncGenerator(baseValue + 2);
+			const c = yield* gen(depMethod)(baseValue + 3);
+			const d = yield* gen(depAsyncMethod)(baseValue + 4);
+
+			return a + b + c + d;
+		}
+
+		await it("returns a function that calls flow() with the arguments", async () => {
+			const wrapper = wrapFlow(generator);
+
+			const result = await wrapper(2);
+
+			ok(result.ok === true);
+			equal(result.value, 18);
 		});
 	});
 });

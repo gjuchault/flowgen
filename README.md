@@ -225,10 +225,10 @@ A noop helper. Can be useful when you want to yield nothing just to please the l
 Example:
 
 ```ts
-async function* method(a: number): AsyncGenerator<Error, number> {
+async function* method() {
   yield* noop();
 
-  return a;
+  return 42;
 }
 ```
 
@@ -243,8 +243,8 @@ A noop helper. Can be useful when you want to yield a value
 Example:
 
 ```ts
-async function* method(a: number): AsyncGenerator<Error, number> {
-  return yield* identity(a);
+async function* method() {
+  return yield* identity(42);
 }
 ```
 

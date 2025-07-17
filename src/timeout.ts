@@ -15,6 +15,9 @@ async function sleep(
 	});
 }
 
+/**
+ * The error type returned by the `timeout` function
+ */
 export type TimeoutError = { name: "timeoutError"; timeoutInMs: number };
 
 async function* timeoutGenerator(
@@ -32,6 +35,31 @@ async function* timeoutGenerator(
 	}
 }
 
+/**
+ * Helper to make a generator not exceed a specific time
+ *
+ * Example:
+ *
+ * ```ts
+ * async function* dep1() {
+ *   await setTimeout(50);
+ *   return 1;
+ * }
+ *
+ * const result = flow(async function* () {
+ *   const a = yield* timeout(100, dep1());
+ *   // a = 1 since dep1 is fast enough
+ *
+ *   const b = yield* timeout(10, dep1());
+ *   // this will timeout and result will be a TimeoutError
+ * });
+ * ```
+ *
+ * @param timeoutInMs - The timeout in milliseconds
+ * @param generator - The generator to wrap
+ * @returns A wrapped generator
+ *
+ */
 export function timeout<Error, Value>(
 	timeoutInMs: number,
 	generator: AsyncGenerator<Error, Value>,

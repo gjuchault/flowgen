@@ -2,6 +2,20 @@
 
 Type-safe error management using generators. Inspired by [EffectTS](https://effect.website/) and [typescript-result](https://github.com/everweij/typescript-result)
 
+- [Usage](#usage)
+  - [Without flowgen](#without-flowgen)
+  - [With Result pattern](#with-result-pattern)
+  - [With flowgen](#with-flowgen)
+- [API](#api)
+  - [`flow(generator)`](#flowgenerator)
+  - [`gen(callback)`](#gencallback)
+  - [`never()`](#never)
+  - [`noop()`](#noop)
+  - [`identity()`](#identity)
+  - [`all()`](#all)
+  - [`race()`](#race)
+  - [`timeout()`](#timeout)
+
 ## Usage
 
 ### Without flowgen

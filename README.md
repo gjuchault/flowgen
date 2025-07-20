@@ -15,6 +15,7 @@ Type-safe error management using generators. Inspired by [EffectTS](https://effe
   - [`all()`](#all)
   - [`race()`](#race)
   - [`timeout()`](#timeout)
+  - [`unsafeFlowOrThrow()`](#unsafeFlowOrThrow)
 
 ## Usage
 
@@ -23,8 +24,16 @@ Type-safe error management using generators. Inspired by [EffectTS](https://effe
 You throw your errors and thus relies on untyped goto-like pattern:
 
 ```ts
-async function dependency(a: number, b: number): number {
-  if (value === 0) {
+async function dependency1(a: number, b: number): number {
+  if (b === 0) {
+    throw new Error(`Invalid denominator: ${b}`);
+  }
+
+  return a / b;
+}
+
+async function dependency2(a: number, b: number): number {
+  if (b === 0) {
     throw new Error(`Invalid denominator: ${b}`);
   }
 
@@ -33,9 +42,10 @@ async function dependency(a: number, b: number): number {
 
 async function main(userInput: number) {
   try {
-    const result = await dependency(10, userInput);
+    const result = await dependency1(10, userInput);
+    const result2 = await dependency2(20, userInput);
 
-    console.log(result);
+    console.log(result + result2);
   } catch (error /* error is unknown */) {
     console.log("Some error happened", error);
   }
@@ -51,7 +61,21 @@ type Result<Value, Error> =
   | { ok: true; value: Value }
   | { ok: false; error: Error };
 
-async function dependency(
+async function dependency1(
+  a: number,
+  b: number
+): Promise<Result<number, { name: "valueError"; message: string }>> {
+  if (b === 0) {
+    return {
+      ok: false,
+      error: { name: "valueError", message: `Invalid denominator: ${b}` },
+    };
+  }
+
+  return { ok: true, value: a / b };
+}
+
+async function dependency2(
   a: number,
   b: number
 ): Promise<Result<number, { name: "valueError"; message: string }>> {
@@ -66,18 +90,29 @@ async function dependency(
 }
 
 async function main(userInput: number) {
-  const result = await dependency(10, userInput);
+  const result1 = await dependency1(10, userInput);
 
   // for every method you call, you need to infer `Result` to a successful state
-  if (result.ok == false) {
+  if (result1.ok == false) {
     console.log(
       "Some error happened",
-      result.error /* error is properly typed */
+      result1.error /* error is properly typed */
     );
     return;
   }
 
-  console.log(result.value);
+  const result2 = await dependency2(20, userInput);
+
+  // this means lots of boilerplate code to handle errors
+  if (result2.ok == false) {
+    console.log(
+      "Some error happened",
+      result2.error /* error is properly typed */
+    );
+    return;
+  }
+
+  console.log(result1.value + result2.value);
 }
 ```
 
@@ -86,12 +121,17 @@ async function main(userInput: number) {
 You get automatic typing for errors and returns:
 
 ```ts
-async function* dependency(
-  a: number,
-  b: number
-): AsyncGenerator<Error, number> {
+async function* dependency1(a: number, b: number) {
   if (b === 0) {
-    yield new Error(`Invalid denominator: ${b}`);
+    yield { type: "valueError", message: "Invalid denominator: 0" } as const;
+  }
+
+  return a / b;
+}
+
+async function* dependency2(a: number, b: number) {
+  if (b === 0) {
+    yield { type: "valueError", message: "Invalid denominator: 0" } as const;
   }
 
   return a / b;
@@ -100,23 +140,34 @@ async function* dependency(
 async function main(userInput: number) {
   const result = await flow(async function* () {
     // yield intermediate method which unwraps the value, no chains of `if error early return`
-    const value = yield* dependency(10, userInput); // value is number
+    const value1 = yield* dependency1(10, userInput); // value is number
+    const value2 = yield* dependency2(10, userInput); // value is number
 
-    return value;
+    return value1 + value2;
   });
 
-  // only one error management per flow, an exhaustive switch works well
+  // only one error management per flow with an exhaustive switch
   if (result.ok === false) {
-    console.log(
-      "Some error happened",
-      result.error /* error is properly typed */
-    );
-    return;
+    /* result.error is properly typed */
+    switch (result.error.type) {
+      case "valueError":
+        console.log("Some error happened", result.error);
+        return;
+      default:
+        never();
+    }
   }
 
   console.log(result.value);
 }
 ```
+
+The only drawbacks are:
+
+1. You have to wrap external libraries if you want to add support for AsyncGenerators
+2. You need to `yield` errors using `as const` (or type the return of generators) since TypeScript will infer a poorly intersection type instead (instead of a union)
+
+You can find an example of how to use flowgen in `src/__tests__/complete-example.test.ts`
 
 ## API
 

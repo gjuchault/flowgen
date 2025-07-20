@@ -29,7 +29,7 @@ import { gen } from "./gen.ts";
  */
 export function all<Error, Value>(
 	generators: AsyncGenerator<Error, Value>[],
-): () => AsyncGenerator<Error, Value[]> {
+): AsyncGenerator<Error, Value[]> {
 	const allPromises = generators.map(async (generator) => {
 		return await flow(() => generator);
 	});
@@ -50,7 +50,7 @@ export function all<Error, Value>(
 			return values;
 		},
 		(error) => error as Error,
-	);
+	)();
 }
 
 /**
@@ -82,7 +82,7 @@ export function all<Error, Value>(
  */
 export function race<Error, Value>(
 	generators: AsyncGenerator<Error, Value>[],
-): () => AsyncGenerator<Error, Value> {
+): AsyncGenerator<Error, Value> {
 	const allPromises = generators.map(async (generator) => {
 		return await flow(() => generator);
 	});
@@ -98,5 +98,5 @@ export function race<Error, Value>(
 			return result.value;
 		},
 		(error) => error as Error,
-	);
+	)();
 }

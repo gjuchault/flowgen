@@ -57,24 +57,24 @@ async function* timeoutGenerator(
  *
  * @param timeoutInMs - The timeout in milliseconds
  * @param generator - The generator to wrap
- * @returns A wrapped generator
+ * @returns A generator
  *
  */
 export function timeout<Error, Value>(
 	timeoutInMs: number,
 	generator: AsyncGenerator<Error, Value>,
-): () => AsyncGenerator<Error | TimeoutError, Value> {
-	return async function* wrapped() {
+): AsyncGenerator<Error | TimeoutError, Value> {
+	return (async function* wrapped() {
 		const ac = new AbortController();
 		const signal = ac.signal;
 
 		const result = yield* race<Error | TimeoutError, Value>([
 			generator,
 			timeoutGenerator(timeoutInMs, signal),
-		])();
+		]);
 
 		ac.abort();
 
 		return result;
-	};
+	})();
 }

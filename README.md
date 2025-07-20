@@ -269,7 +269,7 @@ Similar to `Promise.all()` for generators
 ```ts
 function all<Error, Value>(
   generators: AsyncGenerator<Error, Value>[]
-): () => AsyncGenerator<Error, Value[]>;
+): AsyncGenerator<Error, Value[]>;
 ```
 
 Example:
@@ -298,7 +298,7 @@ Similar to `Promise.race()` for generators
 ```ts
 function race<Error, Value>(
   generators: AsyncGenerator<Error, Value>[]
-): () => AsyncGenerator<Error, Value>;
+): AsyncGenerator<Error, Value>;
 ```
 
 Example:
@@ -329,7 +329,7 @@ Helper to make a generator not exceed a specific time
 function timeout<Error, Value>(
   timeoutInMs: number,
   generator: AsyncGenerator<Error, Value>
-): () => AsyncGenerator<Error | TimeoutError, Value>;
+): AsyncGenerator<Error | TimeoutError, Value>;
 ```
 
 Example:

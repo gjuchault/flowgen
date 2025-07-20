@@ -31,7 +31,7 @@ await describe("all()", async () => {
 		await describe("when all generators succeed", async () => {
 			it("should return the results of all generators", async () => {
 				const timeStart = Date.now();
-				const result = await flow(all([gen1(false), gen2(false)]));
+				const result = await flow(() => all([gen1(false), gen2(false)]));
 				const timeEnd = Date.now();
 
 				ok(result.ok === true);
@@ -43,7 +43,7 @@ await describe("all()", async () => {
 		await describe("when one generator fails", async () => {
 			it("should return the results of all generators", async () => {
 				const timeStart = Date.now();
-				const result = await flow(all([gen1(true), gen2(false)]));
+				const result = await flow(() => all([gen1(true), gen2(false)]));
 				const timeEnd = Date.now();
 
 				ok(result.ok === false);
@@ -51,7 +51,7 @@ await describe("all()", async () => {
 				ok(timeEnd - timeStart < 85);
 
 				const timeStart2 = Date.now();
-				const result2 = await flow(all([gen1(false), gen2(true)]));
+				const result2 = await flow(() => all([gen1(false), gen2(true)]));
 				const timeEnd2 = Date.now();
 
 				ok(result2.ok === false);

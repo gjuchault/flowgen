@@ -19,7 +19,7 @@ await describe("timeout()", async () => {
 	await describe("when the generator completes before the timeout", async () => {
 		it("should return the generator's value", async () => {
 			const timeStart = Date.now();
-			const result = await flow(timeout(50, sleeper(20, false)));
+			const result = await flow(() => timeout(50, sleeper(20, false)));
 			const timeEnd = Date.now();
 
 			ok(result.ok === true);
@@ -31,7 +31,7 @@ await describe("timeout()", async () => {
 	await describe("when the timeout triggers before the generator completes", async () => {
 		it("should return a TimeoutError", async () => {
 			const timeStart = Date.now();
-			const result = await flow(timeout(20, sleeper(50, false)));
+			const result = await flow(() => timeout(20, sleeper(50, false)));
 			const timeEnd = Date.now();
 
 			ok(result.ok === false);
@@ -42,7 +42,7 @@ await describe("timeout()", async () => {
 
 	await describe("when the generator yields an error before the timeout", async () => {
 		it("should return the generator's error", async () => {
-			const result = await flow(timeout(50, sleeper(20, true)));
+			const result = await flow(() => timeout(50, sleeper(20, true)));
 			ok(result.ok === false);
 			deepEqual(result.error, { name: "customError", message: "fail!" });
 		});

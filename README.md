@@ -167,7 +167,7 @@ The only drawbacks are:
 1. You have to wrap external libraries if you want to add support for AsyncGenerators
 2. You need to `yield` errors using `as const` (or type the return of generators) since TypeScript will infer a poorly intersection type instead (instead of a union)
 
-You can find an example of how to use flowgen in `src/__tests__/complete-example.test.ts`
+You can find an example of how to use flowgen in [`src/__tests__/complete-example.test.ts`](src/__tests__/complete-example.test.ts)
 
 ## API
 

@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import isMain from "is-main";
 
 async function runTests({
 	nodeOptions = [],
@@ -43,7 +42,7 @@ async function runTests({
 	});
 }
 
-if (isMain(import.meta)) {
+if (import.meta.main) {
 	const filesFilter = process.argv.slice(3).join(" ").trim();
 
 	if (process.argv[2] === "test") {

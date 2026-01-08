@@ -5,6 +5,20 @@
 	"exports": "./build/index.js",
 	"types": "./build/index.d.ts",
 	"license": "MIT",
+	"keywords": [
+		"flow",
+		"generator",
+		"yield",
+		"error",
+		"result",
+		"type",
+		"success",
+		"failure"
+	],
+	"homepage": "https://github.com/gjuchault/flowgen",
+	"bugs": "https://github.com/gjuchault/flowgen/issues",
+	"author": "Gabriel Juchault <gabriel.juchault@gmail.com>",
+	"repository": "gjuchault/flowgen",
 	"engines": {
 		"node": ">= 24"
 	},

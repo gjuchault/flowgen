@@ -1,3 +1,4 @@
+export * from "./errdefer.ts";
 export * from "./flow.ts";
 export * from "./gen.ts";
 export * from "./never.ts";

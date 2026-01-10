@@ -258,6 +258,54 @@ const result = flow(async function* () {
 });
 ```
 
+### `errdefer()`
+
+```ts
+function* errdefer<Error>(
+  callback: (error: Error) => void | Promise<void>
+): Generator<Errdefer<Error>, void, unknown>;
+```
+
+This method is similar to `errdefer` in other languages (eg. [zig](https://ziglang.org/documentation/master/#errdefer)). It allows to cleanup eventual leftovers when a method partially failed. Similar to a `finally` keyword.
+It takes the error as parameter if you need it
+
+Example:
+
+```ts
+let globalTimeout1: NodeJS.Timeout;
+let globalTimeout2: NodeJS.Timeout;
+
+// Two dependency starting a long-living process like a timeout or a database connection
+const genLongLivingDependency1 = gen(async function longLivingDependency() {
+  globalTimeout1 = setTimeout(() => {}, 1000);
+  return "done";
+});
+
+const genLongLivingDependency2 = gen(async function longLivingDependency() {
+  globalTimeout2 = setTimeout(() => {}, 1000);
+  return "done";
+});
+
+const genFailingDependency = gen(async function failingDependency() {
+  throw new Error("some failing dependency");
+});
+
+async function* main() {
+  const dependency1 = yield* genLongLivingDependency1();
+  // this will be called if `main` has a failure somewhere
+  yield* errdefer(() => clearTimeout(globalTimeout1));
+
+  const dependency2 = yield* genLongLivingDependency2();
+  // this will be called if `main` has a failure somewhere, after the first errdefer
+  yield* errdefer(() => clearTimeout(globalTimeout2));
+
+  // since this is failing, it will call every errdefer callback, evaluated in reverse order
+  const failingDependency = yield* genFailingDependency();
+
+  return [dependency1, dependency2, failingDependency];
+}
+```
+
 ### `never()`
 
 ```ts
@@ -285,7 +333,7 @@ async function* method(a: 1 | 2): AsyncGenerator<Error, number> {
 function noop(): AsyncGenerator<never, void>;
 ```
 
-A noop helper. Can be useful when you want to yield nothing just to please the linter.
+A noop helper. Can be useful when you want to yield nothing just to please the linter to get a generator even if you don't really yield.
 
 Example:
 

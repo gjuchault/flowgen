@@ -1,3 +1,5 @@
+import { type Errdefer, isErrdefer } from "./errdefer.ts";
+
 /**
  * This method turns a generator into a promise. Useful as entrypoint before using generators.
  * Inside the generator, always `yield*` other generators.
@@ -24,15 +26,35 @@
  *
  */
 export async function flow<Error, Value>(
-	generator: () => Generator<Error, Value> | AsyncGenerator<Error, Value>,
+	generator: () =>
+		| Generator<Error | Errdefer<Error>, Value>
+		| AsyncGenerator<Error | Errdefer<Error>, Value>,
 ): Promise<{ ok: true; value: Value } | { ok: false; error: Error }> {
-	const step = await generator().next();
+	const deferQueue: Errdefer<Error>[] = [];
 
-	if (step.done === false) {
-		return { ok: false, error: step.value };
+	const gen = generator();
+
+	while (true) {
+		const step = await gen.next();
+
+		if (step.done === true) {
+			return { ok: true, value: step.value as Value };
+		}
+
+		if (isErrdefer(step.value)) {
+			deferQueue.push(step.value);
+			continue;
+		}
+
+		const error = step.value as Error;
+
+		while (deferQueue.length > 0) {
+			const defer = deferQueue.shift();
+			await defer?.callback(error);
+		}
+
+		return { ok: false, error };
 	}
-
-	return { ok: true, value: step.value as Value };
 }
 
 /**
